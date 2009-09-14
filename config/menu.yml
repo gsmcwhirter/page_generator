@@ -1,0 +1,12 @@
+welcome:
+  _name: Announcements
+  _page: news
+something:
+  _name: Something
+  _page: something
+  something_sub1:
+    _name: SubPage 1
+    _page: something_subpage1
+  something_sub2:
+    _name: SubPage 2
+    _page: something_subpage2
