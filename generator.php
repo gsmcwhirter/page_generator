@@ -12,9 +12,9 @@ unset($path);
 
 /**
  *  Things to allow in the templates:
- *  [PAGE_TITLE] (to add to the title bar)
- *  [PREFIX] (for links)
- *	[PREFIX_FINAL] (for images etc)
+ *  /<PAGE_TITLE> (to add to the title bar)
+ *  /<PREFIX> (for links)
+ *	/<PREFIX_FINAL> (for images etc)
  *
  *
  */

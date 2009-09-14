@@ -78,7 +78,7 @@ class Site
 				}
 			}
 
-			file_put_contents($file, preg_replace(array("#\[PAGE_TITLE\]#","#\[PREFIX\]#","#\[PREFIX_FINAL\]#"), array($page->get_title(), $prefix, $this->_link_prefix_final), $data));
+			file_put_contents($file, preg_replace(array("#/<PAGE_TITLE>#","#/<PREFIX>#","#/<PREFIX_FINAL>#"), array($page->get_title(), $prefix, $this->_link_prefix_final), $data));
 
 		}
 

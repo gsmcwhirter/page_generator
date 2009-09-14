@@ -72,7 +72,7 @@ class Site_Page
 		$data = array();
 		foreach($this->_breadcrumbs as $crumb)
 		{
-			$data[] = "<span class='crumb'><a href='[PREFIX]".self::translate_filename($crumb[1])."'>".$crumb[0]."</a></span>";
+			$data[] = "<span class='crumb'><a href='/<PREFIX>".self::translate_filename($crumb[1])."'>".$crumb[0]."</a></span>";
 		}
 
 		return "<div class='breadcrumbs'>".implode("<span class='crumb_sep'>&raquo;</span>", $data)."</div>";
@@ -101,7 +101,7 @@ class Site_Page
 			list($text, $target, $val_data) = $value;
 			if(!preg_match("#^http(s?):#", $target))
 			{
-				$target = '[PREFIX]'.self::translate_filename($target);
+				$target = '/<PREFIX>'.self::translate_filename($target);
 			}
 			$data .= "<li><a href='".$target."'>".$text."</a>";
 			if($val_data != array())
