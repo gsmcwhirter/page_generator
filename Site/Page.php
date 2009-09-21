@@ -1,15 +1,9 @@
 <?php
 
-require_once "Lib/Textile.php";
+//require_once "Lib/Textile.php";
 
 class Site_Page
 {
-	public static $Textile = null;
-
-	public static function translate_filename($pagename, $extension = ".html")
-	{
-		return preg_replace("#_#", "/", $pagename).$extension;
-	}
 
 	protected $_breadcrumbs;
 	protected $_page_name;
@@ -18,11 +12,12 @@ class Site_Page
 	protected $_menu;
 	protected $_filepath;
 	protected $_menuitem;
+	protected $_is_newspage = false;
 
 	public function __construct($page_name, $page_menuitem, Site_Menu &$menu, $filepath)
 	{
 		$this->_menu = $menu;
-		$this->_filepath = $filepath;
+		$this->_filepath = $filepath."pages/";
 		$this->_page_name = $page_name;
 		$this->_menuitem = $page_menuitem;
 
@@ -36,15 +31,11 @@ class Site_Page
 			array_push($this->_breadcrumbs, array($this->_title, $page_name));
 		}
 
-		if(is_null(self::$Textile))
-		{
-			self::$Textile = new Textile();
-		}
 	}
 
-	protected function _pagename_to_filename($extension = ".textile")
+	protected function _pagename_to_filename($extension = ".tpl")//".textile")
 	{
-		return $this->_filepath.self::translate_filename($this->_page_name, $extension);
+		return $this->_filepath.translate_filename($this->_page_name, $extension);
 	}
 
 	protected function _de_quote($text)
@@ -52,9 +43,19 @@ class Site_Page
 		return preg_replace(array("!&quot;!","!&#39;!","!&#092;!"),array("\"","'",'\\'), $text);
 	}
 
+	public function set_newspage()
+	{
+		$this->_is_newspage = true;
+	}
+
+	public function is_newspage()
+	{
+		return (bool)$this->_is_newspage;
+	}
+
 	public function get_filename($extension = ".html")
 	{
-		return self::translate_filename($this->_page_name, $extension);
+		return translate_filename($this->_page_name, $extension);
 	}
 
 	public function get_title()
@@ -62,9 +63,14 @@ class Site_Page
 		return $this->_title;
 	}
 
+	public function get_menuitem()
+	{
+		return $this->_menuitem;
+	}
+
 	public function output_content()
 	{
-		return self::$Textile->TextileThis($this->_de_quote($this->_content),'','','','','external');
+		return $this->_content;
 	}
 
 	public function output_breadcrumbs()
@@ -72,7 +78,7 @@ class Site_Page
 		$data = array();
 		foreach($this->_breadcrumbs as $crumb)
 		{
-			$data[] = "<span class='crumb'><a href='/<PREFIX>".self::translate_filename($crumb[1])."'>".$crumb[0]."</a></span>";
+			$data[] = "<span class='crumb'><a href='[PREFIX]".translate_filename($crumb[1])."'>".$crumb[0]."</a></span>";
 		}
 
 		return "<div class='breadcrumbs'>".implode("<span class='crumb_sep'>&raquo;</span>", $data)."</div>";
@@ -101,7 +107,7 @@ class Site_Page
 			list($text, $target, $val_data) = $value;
 			if(!preg_match("#^http(s?):#", $target))
 			{
-				$target = '/<PREFIX>'.self::translate_filename($target);
+				$target = '[PREFIX]'.translate_filename($target);
 			}
 			$data .= "<li><a href='".$target."'>".$text."</a>";
 			if($val_data != array())
