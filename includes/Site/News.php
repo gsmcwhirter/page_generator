@@ -8,12 +8,16 @@ class Site_News
 	protected $_menuitem;
 	protected $_newsfile;
 	protected $_month_years = array();
+	protected $_rss_title;
+	protected $_rss_description;
 
-	public function __construct($menuitem, Site_Menu &$menu, $filepath)
+	public function __construct($menuitem, Site_Menu &$menu, Settings $settings)
 	{
 		$this->_menu = $menu;
-		$this->_filepath = $filepath."news/";
+		$this->_filepath = $settings->content_file_path."news/";
 		$this->_menuitem = $menuitem;
+		$this->_rss_description = $settings->rss_description;
+		$this->_rss_title = $settings->rss_title;
 
 		$this->_parse_directory();
 	}
@@ -242,6 +246,43 @@ class Site_News
 		return array("content" => $data, "crumbs" => $crumb, "filename" => $filename, "title" => $title);
 	}
 
+	public function generate_rss()
+	{
+		$data = array();
+
+		$thisyear = date("Y");
+		$thismonth = date("m");
+		$thisday = date("d");
+
+		foreach($this->_month_years as $year => $monthdata)
+		{
+			if($year > $thisyear)
+			{
+				continue;
+			}
+
+			foreach($monthdata as $month => $articles)
+			{
+				if($year == $thisyear && $month > $thismonth)
+				{
+					continue;
+				}
+
+				foreach($articles as $day => $filename)
+				{
+					if($year == $thisyear && $month == $thismonth && $day > $thisday)
+					{
+						continue;
+					}
+
+					$data[] = $year."/".$month."/".$filename;
+				}
+			}
+		}
+
+		return $this->_rss_markup($data);
+	}
+
 	public function generate_last_n($n = 5)
 	{
 		$data = array();
@@ -322,7 +363,7 @@ class Site_News
 				{
 					$data .= "<p class='link' id='news_article_".$counter."_more'><a href='[PREFIX]news/".$year."/".$month.".html' onclick='philsci.show_more(".$counter."); return false;'>read more...</a></p>";
 					$data .= "<p class='link hidden' id='news_article_".$counter."_less'><a href='[PREFIX]news/".$year."/".$month.".html' onclick='philsci.show_less(".$counter."); return false;'>...read less</a></p>";
-					$data .= "<div class='hidden' id='news_article_".$counter."'>";
+					$data .= "<div class='more' id='news_article_".$counter."'>";
 					$data .= $content_rml[1];
 					$data .= "</div>";
 
@@ -335,6 +376,45 @@ class Site_News
 			}
 			$data .= "</div>";
 		}
+
+		return $data;
+	}
+
+	protected function _rss_markup($articles)
+	{
+		$data = '
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<atom:link href="[PREFIX][THISPAGE]" rel="self" type="application/rss+xml" />
+		<title>'.$this->_rss_title.'</title>
+		<link>[PREFIX]index.html</link>
+		<description>'.$this->_rss_description.'</description>
+		<lastBuildDate>'.gmdate("r").'</lastBuildDate>
+		<language>en-us</language>
+		<ttl>1440</ttl>';
+		foreach($articles as $file)
+		{
+			list($title, $content) = explode("%%%", file_get_contents($this->_filepath.$file), 2);
+			$title = trim($title);
+			$content = preg_replace("#\[split here\]#", "", trim($content));
+
+			list($year, $month, $fname) = explode("/", $file, 3);
+			list($day, $ext) = explode(".", $fname, 2);
+			$timestamp = strtotime($year."/".$month."/".$day." 12:00pm");
+
+			$data .= '
+		<item>
+			<title>'.$title.'</title>
+			<link>[PREFIX]news/'.$year.'/'.$month.'.html</link>
+			<guid>[PREFIX]news/'.$year.'/'.$month.'/'.$day.'</guid>
+			<pubDate>'.gmdate("r", $timestamp).'</pubDate>
+			<description>'.preg_replace("#</?p>#", "", $content).'</description>
+			<author>[WEBMASTER]</author>
+		</item>';
+		}
+		$data .= '
+	</channel>
+</rss>';
 
 		return $data;
 	}
