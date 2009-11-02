@@ -21,6 +21,7 @@ class Site
 	protected $_rss_file;
 	protected $_webmaster;
 	protected $_sitemap = array();
+	protected $_analytics;
 
 	public function __construct($page_data, $menu_data, Settings $settings)
 	{
@@ -35,6 +36,8 @@ class Site
 		$this->_rss_file = $settings->rss_file;
 		$this->_rss_title = $settings->rss_title;
 		$this->_webmaster = $settings->webmaster;
+		$this->_analytics = $settings->analytics_id;
+		$this->_google_verify = $settings->google_verify;
 
 		$this->_menu = new Site_Menu($menu_data);
 
@@ -74,7 +77,7 @@ class Site
 		$template_data = array();
 		foreach($this->_output_order as $out_item)
 		{
-			if(!preg_match("#^\[.*\]$#", $out_item))
+			if(!preg_match("#^\(.*\)$#", $out_item))
 			{
 				$template_data[$out_item] = file_get_contents($this->_template_dir.$out_item.".tpl");
 			}
@@ -83,33 +86,52 @@ class Site
 		//generate standard pages
 		foreach($this->_pages as $page)
 		{
-			$file = $this->_output_dir.$type."/".$page->get_filename();
+			$no_template = false;
 			$parts = explode("/", $page->get_filename());
 			$last_part = array_pop($parts);
+
+			if($last_part == ".htaccess.html")
+			{
+				$file = $this->_output_dir.$type."/".implode("/", $parts)."/.htaccess";
+				$no_template = true;
+			}
+			else
+			{
+				$file = $this->_output_dir.$type."/".$page->get_filename();
+				array_push($this->_sitemap, $this->_domain.$prefix.$page->get_filename());
+			}
+
 			array_unshift($parts, $type);
 
 			$this->_ensure_directories($parts);
 
-			$data = "";
-
-			foreach($this->_output_order as $out_item)
+			if($no_template)
 			{
-				switch($out_item)
+				$data = $page->output_content();
+			}
+			else
+			{
+				$data = "";
+
+				foreach($this->_output_order as $out_item)
 				{
-					case "[menu]":
-						$data .= $page->output_menu();
-						break;
-					case "[content]":
-						$data .= $page->output_breadcrumbs();
-						$data .= $page->output_content();
-						break;
-					default:
-						$data .= $template_data[$out_item];
+					switch($out_item)
+					{
+						case "(menu)":
+							$data .= $page->output_menu();
+							break;
+						case "(content)":
+							$data .= $page->output_breadcrumbs();
+							$data .= $page->output_content();
+							break;
+						default:
+							$data .= $template_data[$out_item];
+					}
 				}
 			}
 
-			$regex = array("#\[PAGE_TITLE\]#","#\[PREFIX\]#","#\[PREFIX_FINAL\]#","#\[RSS_LINK\]#","#\[WEBMASTER\]#");
-			$replace = array($page->get_title(), $prefix, $this->_link_prefix_final,"", $this->_webmaster);
+			$regex = array("#\[PAGE_TITLE\]#","#\[PREFIX\]#","#\[PREFIX_FINAL\]#","#\[RSS_LINK\]#","#\[WEBMASTER\]#","#\[ANALYTICS_ID\]#","#\[GOOGLE_VERIFY\]#");
+			$replace = array($page->get_title(), $prefix, $this->_link_prefix_final,"", $this->_webmaster, $this->_analytics, $this->_google_verify);
 
 			if($page->is_newspage())
 			{
@@ -118,7 +140,6 @@ class Site
 			}
 
 			file_put_contents($file, preg_replace($regex, $replace, $data));
-			array_push($this->_sitemap, $this->_domain.$prefix.$page->get_filename());
 		}
 
 		//generate news archives
@@ -138,10 +159,10 @@ class Site
 			{
 				switch($out_item)
 				{
-					case "[menu]":
+					case "(menu)":
 						$data .= $this->_news->output_menu();
 						break;
-					case "[content]":
+					case "(content)":
 						$data .= $this->_news->output_breadcrumbs($adata["crumbs"]);
 						$data .= $adata["content"];
 						break;
@@ -150,8 +171,8 @@ class Site
 				}
 			}
 
-			$regex = array("#\[PAGE_TITLE\]#","#\[PREFIX\]#","#\[PREFIX_FINAL\]#","#\[WEBMASTER\]#");
-			$replace = array($adata["title"], $prefix, $this->_link_prefix_final, $this->_webmaster);
+			$regex = array("#\[PAGE_TITLE\]#","#\[PREFIX\]#","#\[PREFIX_FINAL\]#","#\[RSS_LINK\]#","#\[WEBMASTER\]#","#\[ANALYTICS_ID\]#","#\[GOOGLE_VERIFY\]#");
+			$replace = array($adata["title"], $prefix, $this->_link_prefix_final, "", $this->_webmaster, $this->_analytics, $this->_google_verify);
 
 			file_put_contents($file, preg_replace($regex, $replace, $data));
 			array_push($this->_sitemap, $this->_domain.$prefix.$adata["filename"]);

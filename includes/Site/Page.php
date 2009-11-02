@@ -78,44 +78,18 @@ class Site_Page
 		$data = array();
 		foreach($this->_breadcrumbs as $crumb)
 		{
-			$data[] = "<span class='crumb'><a href='[PREFIX]".translate_filename($crumb[1])."'>".$crumb[0]."</a></span>";
+			$data[translate_filename($crumb[1])] = $crumb[0];
 		}
 
-		return "<div class='breadcrumbs'>".implode("<span class='crumb_sep'>&raquo;</span>", $data)."</div>";
+		return $this->_menu->output_breadcrumbs($data);
 	}
 
 	public function output_menu()
 	{
 		$this->_menu->set_page_level($this->_menuitem);
-		$struct_data = $this->_menu->menu_structure();
+		$data = $this->_menu->output_menu();
 		$this->_menu->reset_menu();
 
-		$data = "<div class='menu'>";
-		$data .= "<ul>";
-		$data .= $this->_output_menu_recursive($struct_data);
-		$data .= "</ul>";
-		$data .= "</div>";
-
-		return $data;
-	}
-
-	protected function _output_menu_recursive($data_array)
-	{
-		$data = "";
-		foreach($data_array as $value)
-		{
-			list($text, $target, $val_data) = $value;
-			if(!preg_match("#^http(s?):#", $target))
-			{
-				$target = '[PREFIX]'.translate_filename($target);
-			}
-			$data .= "<li><a href='".$target."'>".$text."</a>";
-			if($val_data != array())
-			{
-				$data .= "<ul>".$this->_output_menu_recursive($val_data)."</ul>";
-			}
-			$data .= "</li>";
-		}
 		return $data;
 	}
 }

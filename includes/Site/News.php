@@ -64,7 +64,28 @@ class Site_News
 
 								$art = $article->getFilename();
 								list($day, $ext) = explode(".", $art, 2);
-								$this->_month_years[$year][$month][$day] = $art;
+								$days = explode("-", $day, 2);
+								$day = $days[0];
+								if(count($days) == 2 && array_key_exists($day, $this->_month_years[$year][$month]) && !is_array($this->_month_years[$year][$month][$day]))
+								{
+									//$this->_month_years[$year][$month][$day] = array(0 => $this->_month_years[$year][$month][$day]);
+									throw new Exception("Error Parsing News: Multiple articles on the same day not all indexed -- ".$year."/".$month."/".$day);
+								}
+								elseif(count($days) == 2 && array_key_exists($day, $this->_month_years[$year][$month]))
+								{
+									$this->_month_years[$year][$month][$day][$days[1]] = $art;
+									krsort($this->_month_years[$year][$month][$day]);
+								}
+								elseif(count($days) == 2)
+								{
+									$this->_month_years[$year][$month][$day] = array($days[1] => $art);
+									krsort($this->_month_years[$year][$month][$day]);
+								}
+								else
+								{
+									$this->_month_years[$year][$month][$day] = $art;
+								}
+
 							}
 
 							krsort($this->_month_years[$year][$month]);
@@ -82,48 +103,15 @@ class Site_News
 	public function output_menu()
 	{
 		$this->_menu->set_page_level($this->_menuitem);
-		$struct_data = $this->_menu->menu_structure();
+		$data = $this->_menu->output_menu();
 		$this->_menu->reset_menu();
 
-		$data = "<div class='menu'>";
-		$data .= "<ul>";
-		$data .= $this->_output_menu_recursive($struct_data);
-		$data .= "</ul>";
-		$data .= "</div>";
-
-		return $data;
-	}
-
-	protected function _output_menu_recursive($data_array)
-	{
-		$data = "";
-		foreach($data_array as $value)
-		{
-			list($text, $target, $val_data) = $value;
-			if(!preg_match("#^http(s?):#", $target))
-			{
-				$target = '[PREFIX]'.translate_filename($target);
-			}
-			$data .= "<li><a href='".$target."'>".$text."</a>";
-			if($val_data != array())
-			{
-				$data .= "<ul>".$this->_output_menu_recursive($val_data)."</ul>";
-			}
-			$data .= "</li>";
-		}
 		return $data;
 	}
 
 	public function output_breadcrumbs($crumbs)
 	{
-		$data = array();
-
-		foreach($crumbs as $href => $text)
-		{
-			$data[] = "<span class='crumb'><a href='[PREFIX]".$href.".html'>".$text."</a></span>";
-		}
-
-		return "<div class='breadcrumbs'>".implode("<span class='crumb_sep'>&raquo;</span>", $data)."</div>";
+		return $this->_menu->output_breadcrumbs($crumbs);
 	}
 
 	public function generate_archives()
@@ -152,10 +140,10 @@ class Site_News
 	protected function _generate_archive()
 	{
 		$filename = "news/index.html";
-		$crumb = array("index" => "Welcome", "news/index" => "News Archive");
-		$title = "News Archive";
+		$crumb = array("index.html" => "Announcements", "news/index.html" => "News Archives");
+		$title = "News Archives";
 		$data = "<h1>".$title."</h1>";
-		$data .= "<ul>";
+		$data .= "<ul class='archive_list'>";
 
 		$keys = array_keys($this->_month_years);
 		sort($keys);
@@ -174,7 +162,7 @@ class Site_News
 
 			if(array_key_exists($i, $this->_month_years))
 			{
-				$data .= "<a href='[PREFIX]news/".$i.".html'>".$text."</a>";
+				$data .= "<a href='[PREFIX]news/".$i."/index.html'>".$text."</a>";
 			}
 			else
 			{
@@ -190,11 +178,11 @@ class Site_News
 
 	protected function _generate_archive_year($year, $mdata)
 	{
-		$filename = "news/".$year.".html";
-		$crumb = array("index" => "Welcome", "news/index" => "News Archive","news/".$year => $year);
+		$filename = "news/".$year."/index.html";
+		$crumb = array("index.html" => "Announcements", "news/index.html" => "News Archives","news/".$year."/index.html" => $year);
 		$title = $year." News Archive";
 		$data = "<h1>".$title."</h1>";
-		$data .= "<ul class='bullet'>";
+		$data .= "<ul class='archive_list'>";
 
 		for($i = 1; $i < 13; $i++)
 		{
@@ -209,14 +197,14 @@ class Site_News
 			$timestamp = strtotime($year."/".$str."/03 12:00pm");
 			$text = date("F", $timestamp);
 
-			$ct = array_key_exists($str, $mdata) ? count($mdata[$str]) : 0;
+			$ct = array_key_exists($str, $mdata) ? $this->_get_article_count($mdata[$str]) : 0;
 			if($ct != 0)
 			{
-				$data .= "<a href='[PREFIX]news/".$year."/".$str.".html'>".$text." (".$ct." article".($ct != 1 ? "s" : "").")</a>";
+				$data .= "<a href='[PREFIX]news/".$year."/".$str.".html'>".$text." ".$year." (".$ct." article".($ct != 1 ? "s" : "").")</a>";
 			}
 			else
 			{
-				$data .= $text." (no news)";
+				$data .= $text." ".$year." (no news)";
 			}
 
 			$data .= "</li>";
@@ -227,19 +215,46 @@ class Site_News
 		return array("content" => $data, "crumbs" => $crumb, "filename" => $filename, "title" => $title);
 	}
 
+	protected function _get_article_count($articles)
+	{
+		$count = 0;
+		foreach($articles as $art)
+		{
+			if(is_array($art))
+			{
+				$count += count($art);
+			}
+			else
+			{
+				$count += 1;
+			}
+		}
+		return $count;
+	}
+
 	protected function _generate_archive_month($year, $month, $articles)
 	{
 		$mtimestamp = strtotime($year."/".$month."/03 12:00pm");
 		$mname = date("F", $mtimestamp);
 		$filename = "news/".$year."/".$month.".html";
-		$crumb = array("index" => "Welcome", "news/index" => "News Archive", "news/".$year => $year, "news/".$year."/".$month => $mname);
+		$crumb = array("index.html" => "Announcements", "news/index.html" => "News Archives", "news/".$year."/index.html" => $year, "news/".$year."/".$month.".html" => $mname);
 		$title = "News for ".$mname." ".$year;
 		$data = "<h1>".$title."</h1>";
 
 		$list = array();
 		foreach($articles as $art)
 		{
-			$list[] = $year."/".$month."/".$art;
+			if(is_array($art))
+			{
+				foreach($art as $index => $art2)
+				{
+					$list[] = $year."/".$month."/".$art2;
+				}
+			}
+			else
+			{
+				$list[] = $year."/".$month."/".$art;
+			}
 		}
 
 		$data .= $this->_news_markup($list, false);
@@ -275,7 +290,18 @@ class Site_News
 						continue;
 					}
 
-					$data[] = $year."/".$month."/".$filename;
+					if(is_array($filename))
+					{
+						foreach($filename as $ind => $filename2)
+						{
+							$data[] = $year."/".$month."/".$filename2;
+						}
+					}
+					else
+					{
+						$data[] = $year."/".$month."/".$filename;
+					}
+
 				}
 			}
 		}
@@ -313,13 +339,31 @@ class Site_News
 						continue;
 					}
 
-					$data[] = $year."/".$month."/".$filename;
+					if(is_array($filename))
+					{
+						foreach($filename as $ind => $filename2)
+						{
+							$data[] = $year."/".$month."/".$filename2;
 
-					if(count($data) >= $n)
+							if(count($data) >= $n)
+							{
+								$done = true;
+								break;
+							}
+						}
+
+					}
+					else
+					{
+						$data[] = $year."/".$month."/".$filename;
+					}
+
+					if($done || count($data) >= $n)
 					{
 						$done = true;
 						break;
 					}
+
 				}
 
 				if($done)
@@ -349,10 +393,20 @@ class Site_News
 
 			list($year, $month, $fname) = explode("/", $file, 3);
 			list($day, $ext) = explode(".", $fname, 2);
+			$days = explode("-", $day, 2);
+			$day = $days[0];
+			if(count($days) == 2)
+			{
+				$ind = $days[1];
+			}
+			else
+			{
+				$ind = 0;
+			}
 			$timestamp = strtotime($year."/".$month."/".$day." 12:00pm");
 
 			$data .= "<div class='news'>";
-			$data .= "<h2>".$title."</h2>";
+			$data .= "<a id='article-".$year."-".$month."-".$day."-".$ind."'> </a><h2>".$title."</h2>";
 			$data .= "<span class='byline'>".date("D M jS, Y", $timestamp)."</span>"; //l F js, Y
 
 			if($split)
@@ -361,8 +415,8 @@ class Site_News
 				$data .= $content_rml[0];
 				if(count($content_rml) != 1 && !empty($content_rml[1]))
 				{
-					$data .= "<p class='link' id='news_article_".$counter."_more'><a href='[PREFIX]news/".$year."/".$month.".html' onclick='philsci.show_more(".$counter."); return false;'>read more...</a></p>";
-					$data .= "<p class='link hidden' id='news_article_".$counter."_less'><a href='[PREFIX]news/".$year."/".$month.".html' onclick='philsci.show_less(".$counter."); return false;'>...read less</a></p>";
+					$data .= "<p class='link' id='news_article_".$counter."_more'><a href='[PREFIX]news/".$year."/".$month.".html#".$year."-".$month."-".$day."-".$ind."' onclick='philsci.show_more(".$counter."); return false;'>read more...</a></p>";
+					$data .= "<p class='link hidden' id='news_article_".$counter."_less'><a href='[PREFIX]news/".$year."/".$month.".html#".$year."-".$month."-".$day."-".$ind."' onclick='philsci.show_less(".$counter."); return false;'>...read less</a></p>";
 					$data .= "<div class='more' id='news_article_".$counter."'>";
 					$data .= $content_rml[1];
 					$data .= "</div>";
@@ -400,15 +454,25 @@ class Site_News
 
 			list($year, $month, $fname) = explode("/", $file, 3);
 			list($day, $ext) = explode(".", $fname, 2);
+			$days = explode("-", $day, 2);
+			$day = $days[0];
+			if(count($days) == 2)
+			{
+				$ind = $days[1];
+			}
+			else
+			{
+				$ind = 0;
+			}
 			$timestamp = strtotime($year."/".$month."/".$day." 12:00pm");
 
 			$data .= '
 		<item>
 			<title>'.$title.'</title>
-			<link>[PREFIX]news/'.$year.'/'.$month.'.html</link>
-			<guid>[PREFIX]news/'.$year.'/'.$month.'/'.$day.'</guid>
+			<link>[PREFIX]news/'.$year.'/'.$month.'.html#atricle-'.$year.'-'.$month.'-'.$day.'-'.$ind.'</link>
+			<guid>[PREFIX]news/'.$year.'/'.$month.'.html#article-'.$year.'-'.$month.'-'.$day.'-'.$ind.'</guid>
 			<pubDate>'.gmdate("r", $timestamp).'</pubDate>
-			<description>'.preg_replace("#</?p>#", "", $content).'</description>
+			<description><![CDATA['.$content.']]></description>
 			<author>[WEBMASTER]</author>
 		</item>';
 		}

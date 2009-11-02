@@ -1,0 +1,42 @@
+all:
+  page_output_order:
+    - header
+    - (content)
+    - separator
+    - (menu)
+    - footer
+  news_page: index
+  rss_file: news.rss
+  rss_title: 
+  rss_description:
+  webmaster: 
+development:
+  content_file_path: /path/to/generator/includes/
+  page_output_dir: /path/to/generator/output/
+  page_final_dir: /path/to/generator/target/
+  page_output_template_dir: /path/to/generator/includes/templates/
+  link_prefix_testing: /generator/output/testing/
+  link_prefix_final: /generator/target/
+  domain_prefix: http://www.example.com
+  analytics_id: 
+  google_verify: 
+local:
+  content_file_path: /path/to/generator/includes/
+  page_output_dir: /path/to/generator/output/
+  page_final_dir: /path/to/generator/target/
+  page_output_template_dir: /path/to/generator/includes/templates/
+  link_prefix_testing: /generator/output/testing/
+  link_prefix_final: /generator/target/
+  domain_prefix: http://localhost
+  analytics_id: 
+  google_verify: 
+production:
+  content_file_path: /path/to/generator/includes/
+  page_output_dir: /path/to/generator/output/
+  page_final_dir: /path/to/generator/target/
+  page_output_template_dir: /path/to/generator/includes/templates/
+  link_prefix_testing: /generator/output/testing/
+  link_prefix_final: /generator/target/
+  domain_prefix: http://www.example.com
+  analytics_id:
+  google_verify:

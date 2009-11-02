@@ -16,7 +16,9 @@ class Settings
 		"rss_file" => null,
 		"rss_title" => null,
 		"rss_description" => null,
-		"webmaster" => null
+		"webmaster" => null,
+		"analytics_id" => null,
+		"google_verify" => null
 	);
 
 	public function __construct()
