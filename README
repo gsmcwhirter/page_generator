@@ -8,6 +8,3 @@ Copyright: 2009 Greg McWhirter
 
 This software makes use of the SPYC 0.3 library, distributed in the Lib/Spyc.php file.
 Please see that file for copyright and licensing information for that library.
-
-This software also makes use of the Textile 2.0 library, distributed in the Lib/Textile.php file.
-Please see that file for copyright and licensing information for that library.
