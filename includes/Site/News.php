@@ -193,21 +193,33 @@ class Site_News
 
 			$str = $this->_zerofill($i);
 
-			$data .= "<li>";
 			$timestamp = strtotime($year."/".$str."/03 12:00pm");
 			$text = date("F", $timestamp);
 
 			$ct = array_key_exists($str, $mdata) ? $this->_get_article_count($mdata[$str]) : 0;
+
 			if($ct != 0)
 			{
+				$data .= "<li>";
 				$data .= "<a href='[PREFIX]news/".$year."/".$str.".html'>".$text." ".$year." (".$ct." article".($ct != 1 ? "s" : "").")</a>";
-			}
-			else
-			{
-				$data .= $text." ".$year." (no news)";
+				$data .= "</li>";
 			}
 
-			$data .= "</li>";
+			//$data .= "<li>";
+			//$timestamp = strtotime($year."/".$str."/03 12:00pm");
+			//$text = date("F", $timestamp);
+			//
+			//$ct = array_key_exists($str, $mdata) ? $this->_get_article_count($mdata[$str]) : 0;
+			//if($ct != 0)
+			//{
+			//	$data .= "<a href='[PREFIX]news/".$year."/".$str.".html'>".$text." ".$year." (".$ct." article".($ct != 1 ? "s" : "").")</a>";
+			//}
+			//else
+			//{
+			//	$data .= $text." ".$year." (no news)";
+			//}
+			//
+			//$data .= "</li>";
 		}
 
 		$data .= "</ul>";
@@ -473,7 +485,7 @@ class Site_News
 			<guid>[PREFIX]news/'.$year.'/'.$month.'.html#article-'.$year.'-'.$month.'-'.$day.'-'.$ind.'</guid>
 			<pubDate>'.gmdate("r", $timestamp).'</pubDate>
 			<description><![CDATA['.$content.']]></description>
-			<author>[WEBMASTER]</author>
+			<author>[WEBMASTER] (Philosophy of Science Association)</author>
 		</item>';
 		}
 		$data .= '

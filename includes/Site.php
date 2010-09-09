@@ -13,6 +13,7 @@ class Site
 	protected $_link_prefix_testing;
 	protected $_link_prefix_final;
 	protected $_output_dir;
+	protected $_testing_dir;
 	protected $_final_dir;
 	protected $_output_order;
 	protected $_template_dir;
@@ -22,10 +23,12 @@ class Site
 	protected $_webmaster;
 	protected $_sitemap = array();
 	protected $_analytics;
+	protected $_index_news_items;
 
 	public function __construct($page_data, $menu_data, Settings $settings)
 	{
 		$this->_output_dir = $settings->page_output_dir;
+		$this->_testing_dir = $settings->page_testing_dir;
 		$this->_final_dir = $settings->page_final_dir;
 		$this->_link_prefix_final = $settings->link_prefix_final;
 		$this->_link_prefix_testing = $settings->link_prefix_testing;
@@ -38,6 +41,7 @@ class Site
 		$this->_webmaster = $settings->webmaster;
 		$this->_analytics = $settings->analytics_id;
 		$this->_google_verify = $settings->google_verify;
+		$this->_index_news_items = $settings->news_items;
 
 		$this->_menu = new Site_Menu($menu_data);
 
@@ -136,7 +140,10 @@ class Site
 			if($page->is_newspage())
 			{
 				$rsslink = '<link rel="alternate" type="application/rss+xml" title="'.$this->_rss_title.'" href="[PREFIX]'.$this->_rss_file.'" />';
-				$data = preg_replace(array("#\[NEWS_CONTENT\]#", "#\[RSS_LINK\]#"), array($this->_news->generate_last_n(),$rsslink), $data);
+				/*$data = preg_replace(array("#\[NEWS_CONTENT\]#", "#\[RSS_LINK\]#"),
+									 array($this->_news->generate_last_n($this->_index_news_items),$rsslink), $data);*/
+				$data = str_replace("[RSS_LINK]",$rsslink,$data);
+				$data = str_replace("[NEWS_CONTENT]",$this->_news->generate_last_n($this->_index_news_items), $data);
 			}
 
 			file_put_contents($file, preg_replace($regex, $replace, $data));
@@ -171,16 +178,25 @@ class Site
 				}
 			}
 
-			$regex = array("#\[PAGE_TITLE\]#","#\[PREFIX\]#","#\[PREFIX_FINAL\]#","#\[RSS_LINK\]#","#\[WEBMASTER\]#","#\[ANALYTICS_ID\]#","#\[GOOGLE_VERIFY\]#");
-			$replace = array($adata["title"], $prefix, $this->_link_prefix_final, "", $this->_webmaster, $this->_analytics, $this->_google_verify);
+			/*$regex = array("#\[PAGE_TITLE\]#","#\[PREFIX\]#","#\[PREFIX_FINAL\]#","#\[RSS_LINK\]#","#\[WEBMASTER\]#","#\[ANALYTICS_ID\]#","#\[GOOGLE_VERIFY\]#");
+			$replace = array($adata["title"], $prefix, $this->_link_prefix_final, "", $this->_webmaster, $this->_analytics, $this->_google_verify);*/
 
-			file_put_contents($file, preg_replace($regex, $replace, $data));
+			$data = str_replace("[PAGE_TITLE]",$adata['title'],$data);
+			$data = str_replace("[PREFIX]",$prefix,$data);
+			$data = str_replace("[PREFIX_FINAL]",$this->_link_prefix_final, $data);
+			$data = str_replace("[RSS_LINK]","",$data);
+			$data = str_replace("[WEBMASTER]",$this->_webmaster, $data);
+			$data = str_replace("[ANALYTICS_ID]", $this->_analytics, $data);
+			$data = str_replace("[GOOGLE_VERIFY]", $this->_google_verify, $data);
+
+			//file_put_contents($file, preg_replace($regex, $replace, $data));
+			file_put_contents($file, $data);
 			array_push($this->_sitemap, $this->_domain.$prefix.$adata["filename"]);
 		}
 
 		//generate RSS file
-		$regex = array("#\[PREFIX\]#","#\[PREFIX_FINAL\]#","#\[THISPAGE\]#","#\[WEBMASTER\]#");
-		$replace = array($this->_domain.$prefix, $this->_domain.$this->_link_prefix_final, $this->_rss_file, $this->_webmaster);
+		/*$regex = array("#\[PREFIX\]#","#\[PREFIX_FINAL\]#","#\[THISPAGE\]#","#\[WEBMASTER\]#");
+		$replace = array($this->_domain.$prefix, $this->_domain.$this->_link_prefix_final, $this->_rss_file, $this->_webmaster);*/
 
 		$file = $this->_output_dir.$type."/".$this->_rss_file;
 		$parts = explode("/", $this->_rss_file);
@@ -188,7 +204,15 @@ class Site
 		array_unshift($parts, $type);
 		$this->_ensure_directories($parts);
 
-		file_put_contents($file, preg_replace($regex, $replace, $this->_news->generate_rss()));
+		$data = $this->_news->generate_rss();
+
+		$data = str_replace("[PREFIX]",$this->_domain.$prefix,$data);
+		$data = str_replace("[PREFIX_FINAL]",$this->_domain.$this->_link_prefix_final, $data);
+		$data = str_replace("[THISPAGE]",$this->_rss_file,$data);
+		$data = str_replace("[WEBMASTER]",$this->_webmaster,$data);
+
+		//file_put_contents($file, preg_replace($regex, $replace, $this->_news->generate_rss()));
+		file_put_contents($file, $data);
 
 		//generate sitemap.xml
 		$file = $this->_output_dir.$type."/sitemap.xml";
@@ -234,6 +258,10 @@ class Site
 		switch($type)
 		{
 			case "testing":
+				if($this->_testing_dir != $this->_output_dir.$type."/")
+				{
+					return $this->_move_pages_recursive($this->_output_dir.$type, $this->_testing_dir);
+				}
 				break;
 			case "final":
 				return $this->_move_pages_recursive($this->_output_dir.$type, $this->_final_dir);

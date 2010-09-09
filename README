@@ -2,9 +2,10 @@
 
 License: MIT License
 Author: Greg McWhirter <greg@hallofkvasir.org>
-Copyright: 2009 Greg McWhirter
+Copyright: 2009-2010 Greg McWhirter
 
 = Credits =
 
-This software makes use of the SPYC 0.3 library, distributed in the Lib/Spyc.php file.
+This software makes use of the SPYC 0.3 and 0.4.5 libraries, distributed 
+in the Lib/Spyc.php file.
 Please see that file for copyright and licensing information for that library.

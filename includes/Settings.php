@@ -9,6 +9,7 @@ class Settings
 		"link_prefix_final" => null,
 		"domain_prefix" => null,
 		"page_output_dir" => null,
+		"page_testing_dir" => null,
 		"page_final_dir" => null,
 		"page_output_order" => null,
 		"page_output_template_dir" => null,
@@ -18,7 +19,8 @@ class Settings
 		"rss_description" => null,
 		"webmaster" => null,
 		"analytics_id" => null,
-		"google_verify" => null
+		"google_verify" => null,
+		"news_items" => null
 	);
 
 	public function __construct()

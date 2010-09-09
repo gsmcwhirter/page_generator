@@ -26,13 +26,15 @@ if(in_array($testing_or_final, array("testing", "final")))
 		 *
 		 */
 
-		require_once "includes/Lib/Spyc.php";
+		require_once "includes/Lib/Spyc-0.4.5.php";
 		require_once "includes/Settings.php";
 		require_once "includes/Site.php";
 
-		$setting_data = SPYC::YAMLLoad("includes/config/settings.yml");
+		$config_path = realpath(dirname(__FILE__))."/includes/config/";
 
-		#print_r($setting_data);
+		$setting_data = SPYC::YAMLLoad($config_path."settings.yml");
+
+		//print_r($setting_data);
 
 		$settings = new Settings();
 
@@ -51,15 +53,24 @@ if(in_array($testing_or_final, array("testing", "final")))
 			$settings->__set($key, $value);
 		}
 
-		$menus = SPYC::YAMLLoad("includes/config/menu.yml");
-		$pages = SPYC::YAMLLoad("includes/config/pages.yml");
+		$menus = SPYC::YAMLLoad($config_path."menu.yml");
+		$pages = SPYC::YAMLLoad($config_path."pages.yml");
 		$site = new Site($pages, $menus, $settings); //CONTENT_FILE_PATH, PAGE_OUTPUT_DIR, PAGE_FINAL_DIR, LINK_PREFIX_TESTING, LINK_PREFIX_FINAL, PAGE_OUTPUT_ORDER, PAGE_OUTPUT_TEMPLATE_DIR, NEWS_PAGE);
 
 		switch($testing_or_final)
 		{
 			case "testing":
 				$site->generate_pages("testing");
-				echo "Success: Pages generated. Url: ".$settings->domain_prefix.$settings->link_prefix_testing."\n";
+				$ret = $site->move_pages("testing");
+				if($ret)
+				{
+					echo "Success: Pages generated. Url: ".$settings->domain_prefix.$settings->link_prefix_testing."\n";
+				}
+				else
+				{
+					throw new Exception("Unable to move generated files.");
+				}
+				
 				break;
 			case "final":
 				$site->generate_pages("final");

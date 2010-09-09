@@ -19,6 +19,7 @@ class Site_Menu
 		{
 			if(!array_key_exists("_name", $newdata))
 			{
+				print_r($newdata);
 				throw new Exception("Site_Menu item was missing a name.");
 			}
 
